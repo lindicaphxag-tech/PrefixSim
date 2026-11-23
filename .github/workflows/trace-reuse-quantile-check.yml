@@ -1,0 +1,35 @@
+name: Independent PrefixSim bounded-gap quantile verifier
+
+on:
+  push:
+    branches:
+      - research/trace-reuse-quantile-ci-20261124
+    paths:
+      - tools/gap_quantiles.hpp
+      - test/test_gap_quantiles.cpp
+      - .github/workflows/trace-reuse-quantile-check.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  memory-bounded-quantiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: ["g++", "clang++"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Standalone strict Release compiler checks (2 million gaps)
+        run: |
+          ${{ matrix.compiler }} -std=c++17 -O2 -DNDEBUG -Wall -Wextra -Werror \
+            test/test_gap_quantiles.cpp -o /tmp/test_gap_quantiles
+          /tmp/test_gap_quantiles
+      - name: Standalone sanitizer checks
+        run: |
+          ${{ matrix.compiler }} -std=c++17 -O1 -g -fsanitize=undefined \
+            -fno-sanitize-recover=all test/test_gap_quantiles.cpp -o /tmp/test_gap_quantiles_ubsan
+          /tmp/test_gap_quantiles_ubsan
